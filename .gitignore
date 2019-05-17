@@ -12,4 +12,5 @@ target/
 */**/*.iml
 */**/*.class
 main
+go.sum
 !.gitignore
