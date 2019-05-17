@@ -16,9 +16,9 @@ func TestElem(t *testing.T) {
 	fmt.Println(ElemFloat64(test, "float"))
 	fmt.Println(ElemTime(test, "time"))
 	fmt.Println(ElemDuration(test, "duration"))
-	fmt.Println(ElemStrSlice(test, "slice"))
-	fmt.Println(ElemStrSlice(test, "slice2"))
-	fmt.Println(ElemStrMap(test, "map"))
+	fmt.Println(ElemStringSlice(test, "slice"))
+	fmt.Println(ElemStringSlice(test, "slice2"))
+	fmt.Println(ElemStringMap(test, "map"))
 }
 
 func TestGet(t *testing.T) {
@@ -27,9 +27,9 @@ func TestGet(t *testing.T) {
 	fmt.Println(GetFloat64("test.float"))
 	fmt.Println(GetTime("test.time"))
 	fmt.Println(GetDuration("test.duration"))
-	fmt.Println(GetStrSlice("test.slice"))
-	fmt.Println(GetStrSlice("test.slice2"))
-	fmt.Println(GetStrMap("test.map"))
+	fmt.Println(GetStringSlice("test.slice"))
+	fmt.Println(GetStringSlice("test.slice2"))
+	fmt.Println(GetStringMap("test.map"))
 }
 
 func TestScan(t *testing.T) {

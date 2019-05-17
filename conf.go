@@ -431,16 +431,14 @@ func Get(keys string) (val interface{}, ok bool) {
 
 func GetMap(keys string) (map[string]interface{}, bool) {
 	if vl, ok := Get(keys); ok {
-		switch vl := vl.(type) {
-		case map[string]interface{}:
-			return vl, true
-		case map[interface{}]interface{}:
-			vm := make(map[string]interface{}, len(vl))
-			for k, v := range vl {
-				vm[ToString(k)] = v
-			}
-			return vm, true
-		}
+		return ToMap(vl), true
+	}
+	return nil, false
+}
+
+func GetStringMap(keys string) (map[string]string, bool) {
+	if vl, ok := Get(keys); ok {
+		return ToStringMap(vl), true
 	}
 	return nil, false
 }
@@ -489,16 +487,16 @@ func GetDuration(keys string) (time.Duration, bool) {
 	return 0, false
 }
 
-func GetStringSlice(keys string) ([]string, bool) {
+func GetSlice(keys string) ([]interface{}, bool) {
 	if vl, ok := Get(keys); ok {
-		return ToStringSlice(vl), true
+		return ToSlice(vl), true
 	}
 	return nil, false
 }
 
-func GetSlice(keys string) ([]interface{}, bool) {
+func GetStringSlice(keys string) ([]string, bool) {
 	if vl, ok := Get(keys); ok {
-		return ToSlice(vl), true
+		return ToStringSlice(vl), true
 	}
 	return nil, false
 }
