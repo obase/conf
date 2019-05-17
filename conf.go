@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+/*
+注意: 不支持动态加载. 修改conf.yml配置必须重启服务!
+*/
+
 const (
 	DEF_CONF_YAML_FILE string = "conf.yml"
 	ENV_CONF_YAML_FILE string = "CONF_YAML_FILE"
