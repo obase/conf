@@ -2,10 +2,8 @@ package conf
 
 import (
 	"bufio"
-	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/obase/log"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
@@ -15,7 +13,7 @@ import (
 )
 
 /*
-注意: 不支持动态加载. 修改conf.yml配置必须重启服务!
+注意: 不支持动态加载. 修改conf.yml配置必须重启服务! 另外conf是其他obase的最底层依赖, 其日志输出采用fmt
 */
 
 const (
@@ -542,30 +540,25 @@ func init() {
 		path = DEF_CONF_YAML_FILE
 	}
 	if info, _ := os.Stat(path); info == nil {
-		log.Errorf(context.Background(), "Can't found conf.yml: %v", path)
-		log.Flushf()
+		fmt.Errorf("Can't found conf.yml: %v", path)
 		return
 	}
 	file, err := os.Open(path)
 	if err != nil {
-		log.Errorf(context.Background(), "Can't open conf.yml: %v, %v", path, err)
-		log.Flushf()
+		fmt.Errorf("Can't open conf.yml: %v, %v", path, err)
 		panic(err)
 	}
 	defer file.Close()
 
 	bs, err := ioutil.ReadAll(bufio.NewReader(file))
 	if err != nil {
-		log.Errorf(context.Background(), "Can't read conf.yml: %v, %v", path, err)
-		log.Flushf()
+		fmt.Errorf("Can't read conf.yml: %v, %v", path, err)
 		panic(err)
 	}
 	err = yaml.Unmarshal(bs, &Values)
 	if err != nil {
-		log.Errorf(context.Background(), "Can't parse conf.yml: %v, %v", path, err)
-		log.Flushf()
+		fmt.Errorf("Can't parse conf.yml: %v, %v", path, err)
 		panic(err)
 	}
-	log.Inforf(context.Background(), "Success load conf.yml: %v", path)
-	log.Flushf()
+	fmt.Printf("Success load conf.yml: %v", path)
 }
