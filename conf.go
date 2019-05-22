@@ -540,25 +540,25 @@ func init() {
 		path = DEF_CONF_YAML_FILE
 	}
 	if info, _ := os.Stat(path); info == nil {
-		fmt.Errorf("Can't found conf.yml: %v", path)
+		fmt.Fprintf(os.Stderr, "Can't found conf.yml: %v", path)
 		return
 	}
 	file, err := os.Open(path)
 	if err != nil {
-		fmt.Errorf("Can't open conf.yml: %v, %v", path, err)
+		fmt.Fprintf(os.Stderr, "Can't open conf.yml: %v, %v", path, err)
 		panic(err)
 	}
 	defer file.Close()
 
 	bs, err := ioutil.ReadAll(bufio.NewReader(file))
 	if err != nil {
-		fmt.Errorf("Can't read conf.yml: %v, %v", path, err)
+		fmt.Fprintf(os.Stderr, "Can't read conf.yml: %v, %v", path, err)
 		panic(err)
 	}
 	err = yaml.Unmarshal(bs, &Values)
 	if err != nil {
-		fmt.Errorf("Can't parse conf.yml: %v, %v", path, err)
+		fmt.Fprintf(os.Stderr, "Can't parse conf.yml: %v, %v", path, err)
 		panic(err)
 	}
-	fmt.Printf("Success load conf.yml: %v", path)
+	fmt.Fprintf(os.Stdout, "Success load conf.yml: %v", path)
 }
