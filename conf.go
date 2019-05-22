@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -404,6 +405,8 @@ func ElemStringMap(val interface{}, key string) (ret map[string]string, ok bool)
 }
 
 func Get(keys string) (val interface{}, ok bool) {
+	// 延迟初始化
+	once.Do(Init)
 
 	if keys == "" {
 		return nil, false
@@ -534,7 +537,9 @@ func Scanf(keys string, f ScanFunc) (interface{}, bool) {
 	return nil, false
 }
 
-func init() {
+var once sync.Once
+
+func Init() {
 	path := os.Getenv(ENV_CONF_YAML_FILE)
 	if path == "" {
 		path = DEF_CONF_YAML_FILE
