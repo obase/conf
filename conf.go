@@ -405,8 +405,6 @@ func ElemStringMap(val interface{}, key string) (ret map[string]string, ok bool)
 }
 
 func Get(keys string) (val interface{}, ok bool) {
-	// 延迟初始化
-	once.Do(Init)
 
 	if keys == "" {
 		return nil, false
@@ -540,30 +538,32 @@ func Scanf(keys string, f ScanFunc) (interface{}, bool) {
 var once sync.Once
 
 func Init() {
-	path := os.Getenv(ENV_CONF_YAML_FILE)
-	if path == "" {
-		path = DEF_CONF_YAML_FILE
-	}
-	if info, _ := os.Stat(path); info == nil {
-		fmt.Fprintf(os.Stderr, "Can't found conf.yml: %v\n", path)
-		return
-	}
-	file, err := os.Open(path)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Can't open conf.yml: %v, %v\n", path, err)
-		panic(err)
-	}
-	defer file.Close()
+	once.Do(func() {
+		path := os.Getenv(ENV_CONF_YAML_FILE)
+		if path == "" {
+			path = DEF_CONF_YAML_FILE
+		}
+		if info, _ := os.Stat(path); info == nil {
+			fmt.Fprintf(os.Stderr, "Can't found conf.yml: %v\n", path)
+			return
+		}
+		file, err := os.Open(path)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Can't open conf.yml: %v, %v\n", path, err)
+			panic(err)
+		}
+		defer file.Close()
 
-	bs, err := ioutil.ReadAll(bufio.NewReader(file))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Can't read conf.yml: %v, %v\n", path, err)
-		panic(err)
-	}
-	err = yaml.Unmarshal(bs, &Values)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Can't parse conf.yml: %v, %v\n", path, err)
-		panic(err)
-	}
-	fmt.Fprintf(os.Stdout, "Success load conf.yml: %v\n", path)
+		bs, err := ioutil.ReadAll(bufio.NewReader(file))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Can't read conf.yml: %v, %v\n", path, err)
+			panic(err)
+		}
+		err = yaml.Unmarshal(bs, &Values)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Can't parse conf.yml: %v, %v\n", path, err)
+			panic(err)
+		}
+		fmt.Fprintf(os.Stdout, "Success load conf.yml: %v\n", path)
+	})
 }
