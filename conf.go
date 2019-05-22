@@ -2,8 +2,10 @@ package conf
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/obase/log"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
@@ -540,20 +542,30 @@ func init() {
 		path = DEF_CONF_YAML_FILE
 	}
 	if info, _ := os.Stat(path); info == nil {
+		log.Errorf(context.Background(), "Can't found conf.yml: %v", path)
+		log.Flushf()
 		return
 	}
 	file, err := os.Open(path)
 	if err != nil {
+		log.Errorf(context.Background(), "Can't open conf.yml: %v, %v", path, err)
+		log.Flushf()
 		panic(err)
 	}
 	defer file.Close()
 
 	bs, err := ioutil.ReadAll(bufio.NewReader(file))
 	if err != nil {
+		log.Errorf(context.Background(), "Can't read conf.yml: %v, %v", path, err)
+		log.Flushf()
 		panic(err)
 	}
 	err = yaml.Unmarshal(bs, &Values)
 	if err != nil {
+		log.Errorf(context.Background(), "Can't parse conf.yml: %v, %v", path, err)
+		log.Flushf()
 		panic(err)
 	}
+	log.Inforf(context.Background(), "Success load conf.yml: %v", path)
+	log.Flushf()
 }
