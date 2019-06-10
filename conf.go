@@ -471,11 +471,18 @@ func GetBool(keys string) (bool, bool) {
 	return false, false
 }
 
-func GetBoolDef(keys string, def bool) bool {
+func OptiBool(keys string, def bool) bool {
 	if vl, ok := GetBool(keys); ok {
 		return vl
 	}
 	return def
+}
+
+func MustBool(keys string) bool {
+	if vl, ok := GetBool(keys); ok {
+		return vl
+	}
+	panic("missing bool config: keys=" + keys)
 }
 
 func GetString(keys string) (string, bool) {
@@ -485,11 +492,18 @@ func GetString(keys string) (string, bool) {
 	return "", false
 }
 
-func GetStringDef(keys string, def string) string {
+func OptiString(keys string, def string) string {
 	if vl, ok := GetString(keys); ok {
 		return vl
 	}
 	return def
+}
+
+func MustString(keys string) string {
+	if vl, ok := GetString(keys); ok {
+		return vl
+	}
+	panic("missing string config: keys=" + keys)
 }
 
 func GetInt(keys string) (int, bool) {
@@ -499,11 +513,18 @@ func GetInt(keys string) (int, bool) {
 	return 0, false
 }
 
-func GetIntDef(keys string, def int) int {
+func OptiInt(keys string, def int) int {
 	if vl, ok := GetInt(keys); ok {
 		return vl
 	}
 	return def
+}
+
+func MustInt(keys string) int {
+	if vl, ok := GetInt(keys); ok {
+		return vl
+	}
+	panic("missing int config: keys=" + keys)
 }
 
 func GetInt64(keys string) (int64, bool) {
@@ -513,11 +534,18 @@ func GetInt64(keys string) (int64, bool) {
 	return 0, false
 }
 
-func GetInt64Def(keys string, def int64) int64 {
+func OptiInt64(keys string, def int64) int64 {
 	if vl, ok := GetInt64(keys); ok {
 		return vl
 	}
 	return def
+}
+
+func MustInt64(keys string) int64 {
+	if vl, ok := GetInt64(keys); ok {
+		return vl
+	}
+	panic("missing int64 config: keys=" + keys)
 }
 
 func GetFloat64(keys string) (float64, bool) {
@@ -527,11 +555,18 @@ func GetFloat64(keys string) (float64, bool) {
 	return 0, false
 }
 
-func GetFloat64Def(keys string, def float64) float64 {
+func OptiFloat64(keys string, def float64) float64 {
 	if vl, ok := GetFloat64(keys); ok {
 		return vl
 	}
 	return def
+}
+
+func MustFloat64(keys string) float64 {
+	if vl, ok := GetFloat64(keys); ok {
+		return vl
+	}
+	panic("missing float64 config: keys=" + keys)
 }
 
 var ZERO_TIME = time.Unix(0, 0)
@@ -543,11 +578,18 @@ func GetTime(keys string) (time.Time, bool) {
 	return ZERO_TIME, false
 }
 
-func GetTimeDef(keys string, def time.Time) time.Time {
+func OptiTime(keys string, def time.Time) time.Time {
 	if vl, ok := GetTime(keys); ok {
 		return vl
 	}
 	return def
+}
+
+func MustTime(keys string) time.Time {
+	if vl, ok := GetTime(keys); ok {
+		return vl
+	}
+	panic("missing time config: keys=" + keys)
 }
 
 func GetDuration(keys string) (time.Duration, bool) {
@@ -557,11 +599,18 @@ func GetDuration(keys string) (time.Duration, bool) {
 	return 0, false
 }
 
-func GetDurationDef(keys string, def time.Duration) time.Duration {
+func OptiDuration(keys string, def time.Duration) time.Duration {
 	if vl, ok := GetDuration(keys); ok {
 		return vl
 	}
 	return def
+}
+
+func MustDuration(keys string) time.Duration {
+	if vl, ok := GetDuration(keys); ok {
+		return vl
+	}
+	panic("missing duration config: keys=" + keys)
 }
 
 func GetSlice(keys string) ([]interface{}, bool) {
@@ -571,11 +620,18 @@ func GetSlice(keys string) ([]interface{}, bool) {
 	return nil, false
 }
 
-func GetSliceDef(keys string, def []interface{}) []interface{} {
+func OptiSlice(keys string, def []interface{}) []interface{} {
 	if vl, ok := GetSlice(keys); ok {
 		return vl
 	}
 	return def
+}
+
+func MustSlice(keys string) []interface{} {
+	if vl, ok := GetSlice(keys); ok && len(vl) > 0 {
+		return vl
+	}
+	panic("missing slice config: keys=" + keys)
 }
 
 func GetStringSlice(keys string) ([]string, bool) {
@@ -585,11 +641,18 @@ func GetStringSlice(keys string) ([]string, bool) {
 	return nil, false
 }
 
-func GetStringSliceDef(keys string, def []string) []string {
+func OptiStringSlice(keys string, def []string) []string {
 	if vl, ok := GetStringSlice(keys); ok {
 		return vl
 	}
 	return def
+}
+
+func MustStringSlice(keys string) []string {
+	if vl, ok := GetStringSlice(keys); ok && len(vl) > 0 {
+		return vl
+	}
+	panic("missing string slice config: keys=" + keys)
 }
 
 func Scan(keys string, ret interface{}) bool {
