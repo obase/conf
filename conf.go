@@ -66,6 +66,22 @@ func ToInt(val interface{}) int {
 	panic(fmt.Sprintf("invalid value to int: %v", val))
 }
 
+func ToInt64(val interface{}) int64 {
+	switch val := val.(type) {
+	case nil:
+		return 0
+	case int:
+		return int64(val)
+	case int64:
+		return val
+	case string:
+		if v, e := strconv.ParseInt(val, 10, 64); e == nil {
+			return v
+		}
+	}
+	panic(fmt.Sprintf("invalid value to int: %v", val))
+}
+
 func ToFloat64(val interface{}) float64 {
 	switch val := val.(type) {
 	case nil:
@@ -455,11 +471,25 @@ func GetBool(keys string) (bool, bool) {
 	return false, false
 }
 
+func GetBoolDef(keys string, def bool) bool {
+	if vl, ok := GetBool(keys); ok {
+		return vl
+	}
+	return def
+}
+
 func GetString(keys string) (string, bool) {
 	if vl, ok := Get(keys); ok {
 		return ToString(vl), true
 	}
 	return "", false
+}
+
+func GetStringDef(keys string, def string) string {
+	if vl, ok := GetString(keys); ok {
+		return vl
+	}
+	return def
 }
 
 func GetInt(keys string) (int, bool) {
@@ -469,11 +499,39 @@ func GetInt(keys string) (int, bool) {
 	return 0, false
 }
 
+func GetIntDef(keys string, def int) int {
+	if vl, ok := GetInt(keys); ok {
+		return vl
+	}
+	return def
+}
+
+func GetInt64(keys string) (int64, bool) {
+	if vl, ok := Get(keys); ok {
+		return ToInt64(vl), true
+	}
+	return 0, false
+}
+
+func GetInt64Def(keys string, def int64) int64 {
+	if vl, ok := GetInt64(keys); ok {
+		return vl
+	}
+	return def
+}
+
 func GetFloat64(keys string) (float64, bool) {
 	if vl, ok := Get(keys); ok {
 		return ToFloat64(vl), true
 	}
 	return 0, false
+}
+
+func GetFloat64Def(keys string, def float64) float64 {
+	if vl, ok := GetFloat64(keys); ok {
+		return vl
+	}
+	return def
 }
 
 var ZERO_TIME = time.Unix(0, 0)
@@ -485,11 +543,25 @@ func GetTime(keys string) (time.Time, bool) {
 	return ZERO_TIME, false
 }
 
+func GetTimeDef(keys string, def time.Time) time.Time {
+	if vl, ok := GetTime(keys); ok {
+		return vl
+	}
+	return def
+}
+
 func GetDuration(keys string) (time.Duration, bool) {
 	if vl, ok := Get(keys); ok {
 		return ToDuration(vl), true
 	}
 	return 0, false
+}
+
+func GetDurationDef(keys string, def time.Duration) time.Duration {
+	if vl, ok := GetDuration(keys); ok {
+		return vl
+	}
+	return def
 }
 
 func GetSlice(keys string) ([]interface{}, bool) {
@@ -499,11 +571,25 @@ func GetSlice(keys string) ([]interface{}, bool) {
 	return nil, false
 }
 
+func GetSliceDef(keys string, def []interface{}) []interface{} {
+	if vl, ok := GetSlice(keys); ok {
+		return vl
+	}
+	return def
+}
+
 func GetStringSlice(keys string) ([]string, bool) {
 	if vl, ok := Get(keys); ok {
 		return ToStringSlice(vl), true
 	}
 	return nil, false
+}
+
+func GetStringSliceDef(keys string, def []string) []string {
+	if vl, ok := GetStringSlice(keys); ok {
+		return vl
+	}
+	return def
 }
 
 func Scan(keys string, ret interface{}) bool {
