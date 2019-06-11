@@ -426,6 +426,8 @@ func Get(keys string) (val interface{}, ok bool) {
 		return nil, false
 	}
 
+	Init() // Must call before
+
 	val = Values
 	for mk, ln := 0, len(keys); mk < ln; {
 		ps := mk
