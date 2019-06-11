@@ -7,9 +7,9 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -18,9 +18,10 @@ import (
 */
 
 const (
-	DEF_CONF_YAML_FILE string = "conf.yml"
-	ENV_CONF_YAML_FILE string = "CONF_YAML_FILE"
-	DEF_STEP_SEP       byte   = '.'
+	CONF_YAML_FILE  string = "conf.yml"
+	PATH_STEP_SEP   byte   = '.'
+	CONF_OPTI_NAME1        = "-conf"
+	CONF_OPTI_NAME2        = "-conf="
 )
 
 var Values map[interface{}]interface{} = make(map[interface{}]interface{})
@@ -426,13 +427,11 @@ func Get(keys string) (val interface{}, ok bool) {
 		return nil, false
 	}
 
-	Init() // Must call before
-
 	val = Values
 	for mk, ln := 0, len(keys); mk < ln; {
 		ps := mk
 		for ps < ln {
-			if keys[ps] == DEF_STEP_SEP {
+			if keys[ps] == PATH_STEP_SEP {
 				break
 			} else {
 				ps++
@@ -484,7 +483,7 @@ func MustBool(keys string) bool {
 	if vl, ok := GetBool(keys); ok {
 		return vl
 	}
-	panic("missing bool config: keys=" + keys)
+	panic("missing bool config: " + keys)
 }
 
 func GetString(keys string) (string, bool) {
@@ -505,7 +504,7 @@ func MustString(keys string) string {
 	if vl, ok := GetString(keys); ok {
 		return vl
 	}
-	panic("missing string config: keys=" + keys)
+	panic("missing string config: " + keys)
 }
 
 func GetInt(keys string) (int, bool) {
@@ -526,7 +525,7 @@ func MustInt(keys string) int {
 	if vl, ok := GetInt(keys); ok {
 		return vl
 	}
-	panic("missing int config: keys=" + keys)
+	panic("missing int config: " + keys)
 }
 
 func GetInt64(keys string) (int64, bool) {
@@ -547,7 +546,7 @@ func MustInt64(keys string) int64 {
 	if vl, ok := GetInt64(keys); ok {
 		return vl
 	}
-	panic("missing int64 config: keys=" + keys)
+	panic("missing int64 config: " + keys)
 }
 
 func GetFloat64(keys string) (float64, bool) {
@@ -568,7 +567,7 @@ func MustFloat64(keys string) float64 {
 	if vl, ok := GetFloat64(keys); ok {
 		return vl
 	}
-	panic("missing float64 config: keys=" + keys)
+	panic("missing float64 config: " + keys)
 }
 
 var ZERO_TIME = time.Unix(0, 0)
@@ -591,7 +590,7 @@ func MustTime(keys string) time.Time {
 	if vl, ok := GetTime(keys); ok {
 		return vl
 	}
-	panic("missing time config: keys=" + keys)
+	panic("missing time config: " + keys)
 }
 
 func GetDuration(keys string) (time.Duration, bool) {
@@ -612,7 +611,7 @@ func MustDuration(keys string) time.Duration {
 	if vl, ok := GetDuration(keys); ok {
 		return vl
 	}
-	panic("missing duration config: keys=" + keys)
+	panic("missing duration config: " + keys)
 }
 
 func GetSlice(keys string) ([]interface{}, bool) {
@@ -633,7 +632,7 @@ func MustSlice(keys string) []interface{} {
 	if vl, ok := GetSlice(keys); ok && len(vl) > 0 {
 		return vl
 	}
-	panic("missing slice config: keys=" + keys)
+	panic("missing slice config: " + keys)
 }
 
 func GetStringSlice(keys string) ([]string, bool) {
@@ -654,7 +653,7 @@ func MustStringSlice(keys string) []string {
 	if vl, ok := GetStringSlice(keys); ok && len(vl) > 0 {
 		return vl
 	}
-	panic("missing string slice config: keys=" + keys)
+	panic("missing string slice config: " + keys)
 }
 
 func Scan(keys string, ret interface{}) bool {
@@ -686,35 +685,48 @@ func Scanf(keys string, f ScanFunc) (interface{}, bool) {
 	return nil, false
 }
 
-var once sync.Once
+/*
+1. 参数-conf <xxx>或-conf=<xxx>
+2. 当前路径./conf.yml
+3. 工作路径 $CWD/conf.yml
+*/
+func init() {
+	var path string
+	for i, n := 0, len(os.Args); i < n; i++ {
+		if os.Args[i] == CONF_OPTI_NAME1 {
+			if i+1 < n {
+				path = os.Args[i+1]
+			}
+			break
+		} else if os.Args[i] == CONF_OPTI_NAME2 {
+			path = os.Args[i][len(CONF_OPTI_NAME2):]
+			break
+		}
+	}
+	if path == "" {
+		if info, _ := os.Stat(CONF_YAML_FILE); info == nil {
+			wd, _ := os.Getwd()
+			path = filepath.Join(wd, CONF_YAML_FILE)
+			if info, _ := os.Stat(path); info == nil {
+				return
+			}
+		} else {
+			path = CONF_YAML_FILE
+		}
+	}
 
-func Init() {
-	once.Do(func() {
-		path := os.Getenv(ENV_CONF_YAML_FILE)
-		if path == "" {
-			path = DEF_CONF_YAML_FILE
-		}
-		if info, _ := os.Stat(path); info == nil {
-			fmt.Fprintf(os.Stderr, "Can't found conf.yml: %v\n", path)
-			return
-		}
-		file, err := os.Open(path)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Can't open conf.yml: %v, %v\n", path, err)
-			panic(err)
-		}
-		defer file.Close()
+	file, err := os.Open(path)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
 
-		bs, err := ioutil.ReadAll(bufio.NewReader(file))
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Can't read conf.yml: %v, %v\n", path, err)
-			panic(err)
-		}
-		err = yaml.Unmarshal(bs, &Values)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Can't parse conf.yml: %v, %v\n", path, err)
-			panic(err)
-		}
-		fmt.Fprintf(os.Stdout, "Success load conf.yml: %v\n", path)
-	})
+	bs, err := ioutil.ReadAll(bufio.NewReader(file))
+	if err != nil {
+		panic(err)
+	}
+	err = yaml.Unmarshal(bs, &Values)
+	if err != nil {
+		panic(err)
+	}
 }
