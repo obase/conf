@@ -708,6 +708,7 @@ func init() {
 			wd, _ := os.Getwd()
 			path = filepath.Join(wd, CONF_YAML_FILE)
 			if info, _ := os.Stat(path); info == nil {
+				fmt.Fprintln(os.Stderr, "Load conf failed: can't found conf.yml any where!")
 				return
 			}
 		} else {
@@ -729,4 +730,5 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Fprintln(os.Stdout, "Load conf success: the path is "+path)
 }
