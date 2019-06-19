@@ -18,10 +18,9 @@ import (
 */
 
 const (
-	CONF_YAML_FILE  string = "conf.yml"
-	PATH_STEP_SEP   byte   = '.'
-	CONF_OPTI_NAME1        = "-conf"
-	CONF_OPTI_NAME2        = "-conf="
+	CONF_YAML_FILE string = "conf.yml"
+	PATH_STEP_SEP  byte   = '.'
+	CONF_YAML_ENV  string = "CONF_YAML"
 )
 
 var Values map[interface{}]interface{} = make(map[interface{}]interface{})
@@ -692,32 +691,18 @@ func Scanf(keys string, f ScanFunc) (interface{}, bool) {
 */
 func init() {
 	var path string
-	for i, n := 0, len(os.Args); i < n; i++ {
-		if os.Args[i] == CONF_OPTI_NAME1 {
-			if i+1 < n {
-				path = os.Args[i+1]
-			}
-			break
-		} else if os.Args[i] == CONF_OPTI_NAME2 {
-			path = os.Args[i][len(CONF_OPTI_NAME2):]
-			break
-		}
-	}
+
+	path = os.Getenv(CONF_YAML_ENV)
 	if path == "" {
-		if info, _ := os.Stat(CONF_YAML_FILE); info == nil {
-			wd, _ := os.Getwd()
-			path = filepath.Join(wd, CONF_YAML_FILE)
-			if info, _ := os.Stat(path); info == nil {
-				fmt.Fprintln(os.Stderr, "Load conf failed: can't found conf.yml any where!")
-				return
-			}
-		} else {
-			path = CONF_YAML_FILE
+		path = filepath.Join(filepath.Base(os.Args[0]), CONF_YAML_FILE)
+		if fi, err := os.Stat(path); fi == nil || os.IsNotExist(err) {
+			return
 		}
 	}
 
 	file, err := os.Open(path)
 	if err != nil {
+		fmt.Fprintln(os.Stderr, "Load conf failed: "+path)
 		panic(err)
 	}
 	defer file.Close()
@@ -730,5 +715,5 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Fprintln(os.Stdout, "Load conf success: the path is "+path)
+	fmt.Fprintln(os.Stdout, "Load conf success: "+path)
 }
