@@ -696,7 +696,11 @@ func init() {
 	if path == "" {
 		path = filepath.Join(filepath.Base(os.Args[0]), CONF_YAML_FILE)
 		if fi, err := os.Stat(path); fi == nil || os.IsNotExist(err) {
-			return
+			dir, _ := os.Getwd()
+			path = filepath.Join(dir, CONF_YAML_FILE)
+			if fi, err := os.Stat(path); fi == nil || os.IsNotExist(err) {
+				return
+			}
 		}
 	}
 
