@@ -280,6 +280,26 @@ func ElemInt(val interface{}, key string) (ret int, ok bool) {
 	return
 }
 
+func ElemInt64(val interface{}, key string) (ret int64, ok bool) {
+	if val != nil {
+		switch val := val.(type) {
+		case map[interface{}]interface{}:
+			if kv, ok := val[key]; ok {
+				return ToInt64(kv), true
+			}
+		case map[string]interface{}:
+			if kv, ok := val[key]; ok {
+				return ToInt64(kv), true
+			}
+		case []interface{}:
+			if idx, err := strconv.Atoi(key); err == nil && idx >= 0 && idx < len(val) {
+				return ToInt64(val[idx]), true
+			}
+		}
+	}
+	return
+}
+
 func ElemFloat64(val interface{}, key string) (ret float64, ok bool) {
 	if val != nil {
 		switch val := val.(type) {
