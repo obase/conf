@@ -2,7 +2,6 @@ package conf
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -677,15 +676,8 @@ func MustStringSlice(keys string) []string {
 
 func Scan(keys string, ret interface{}) bool {
 	if vl, ok := Get(keys); ok {
-		var jsv interface{}
-		switch vl := vl.(type) {
-		case map[interface{}]interface{}:
-			jsv = ToMap(vl)
-		default:
-			jsv = vl
-		}
-		if bs, err := json.Marshal(jsv); err == nil {
-			if err = json.Unmarshal(bs, ret); err == nil {
+		if bs, err := yaml.Marshal(vl); err == nil {
+			if err = yaml.Unmarshal(bs, ret); err == nil {
 				return true
 			} else {
 				panic(err)

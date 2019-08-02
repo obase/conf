@@ -42,3 +42,19 @@ func TestScan(t *testing.T) {
 	fmt.Printf("used time: %v\n", end.Sub(start).Nanoseconds()/1000000)
 	fmt.Println(m)
 }
+
+type Schedule struct {
+	Category string
+	MatchCode string
+	Season string
+}
+func TestScan2(t *testing.T) {
+	vl, _ := Get("pvp.schedules")
+	fmt.Println(vl)
+
+	var ss []*Schedule
+	Scan("pvp.schedules", &ss)
+	for _, s := range ss {
+		fmt.Println(*s)
+	}
+}
