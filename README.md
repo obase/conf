@@ -385,6 +385,8 @@ func Scanf(keys string, f ScanFunc) (interface{}, bool)
 扫描节点值,并调用ScanFunc函数进行处理
 
 # Examples
+
+conf.yml
 ```
 # 业务逻辑配置
 pvp:
@@ -413,10 +415,11 @@ pvp:
 代码
 ```
 type Schedule struct {
-	Category string
-	MatchCode string
-	Season string
+	Category  string `yaml:"category"`
+	MatchCode string `yaml:"matchCode"`
+	Season    string `yaml:"season"`
 }
+
 func TestScan2(t *testing.T) {
 	vl, _ := Get("pvp.schedules")
 	fmt.Println(vl)
@@ -424,8 +427,26 @@ func TestScan2(t *testing.T) {
 	var ss []*Schedule
 	Scan("pvp.schedules", &ss)
 	for _, s := range ss {
-		fmt.Println(*s)
+		fmt.Printf("category=%v,matchCode=%v,season=%v\n", s.Category, s.MatchCode, s.Season)
 	}
 }
 
+```
+输出
+```
+[map[beginDate:2019-07-01 category:3m endDate:2019-07-02 matchCode:CJ season:02] map[beginDate:2019-07-01 category:3s endDate:2019-07-02 matchCode:CJ season:02]]
+- beginDate: "2019-07-01"
+  category: 3m
+  endDate: "2019-07-02"
+  matchCode: CJ
+  season: "02"
+- beginDate: "2019-07-01"
+  category: 3s
+  endDate: "2019-07-02"
+  matchCode: CJ
+  season: "02"
+
+category=3m,matchCode=CJ,season=02
+category=3s,matchCode=CJ,season=02
+--- PASS: TestScan2 (6.25s)
 ```

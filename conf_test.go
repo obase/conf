@@ -44,10 +44,11 @@ func TestScan(t *testing.T) {
 }
 
 type Schedule struct {
-	Category string
-	MatchCode string
-	Season string
+	Category  string `yaml:"category"`
+	MatchCode string `yaml:"matchCode"`
+	Season    string `yaml:"season"`
 }
+
 func TestScan2(t *testing.T) {
 	vl, _ := Get("pvp.schedules")
 	fmt.Println(vl)
@@ -55,6 +56,6 @@ func TestScan2(t *testing.T) {
 	var ss []*Schedule
 	Scan("pvp.schedules", &ss)
 	for _, s := range ss {
-		fmt.Println(*s)
+		fmt.Printf("category=%v,matchCode=%v,season=%v\n", s.Category, s.MatchCode, s.Season)
 	}
 }
