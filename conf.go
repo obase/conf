@@ -6,6 +6,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -442,7 +443,7 @@ func ElemStringMap(val interface{}, key string) (ret map[string]string, ok bool)
 func Get(keys string) (val interface{}, ok bool) {
 
 	if keys == "" {
-		return nil, false
+		return Values, true
 	}
 
 	val = Values
@@ -706,7 +707,8 @@ func init() {
 
 	path = os.Getenv(CONF_YAML_ENV)
 	if path == "" {
-		path = filepath.Join(filepath.Dir(os.Args[0]), CONF_YAML_FILE)
+		loc, _ := exec.LookPath(os.Args[0])
+		path = filepath.Join(filepath.Dir(loc), CONF_YAML_FILE)
 		if fi, err := os.Stat(path); fi == nil || os.IsNotExist(err) {
 			dir, _ := os.Getwd()
 			path = filepath.Join(dir, CONF_YAML_FILE)
