@@ -697,7 +697,7 @@ func Scanf(keys string, f ScanFunc) (interface{}, bool) {
 	return nil, false
 }
 
-func Convert(dst interface{}, src interface{}) (err error) {
+func Convert(src interface{}, dst interface{}) (err error) {
 	if src == nil {
 		return
 	}
