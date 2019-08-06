@@ -384,6 +384,13 @@ func Scanf(keys string, f ScanFunc) (interface{}, bool)
 ```
 扫描节点值,并调用ScanFunc函数进行处理
 
+
+- func Convert
+```
+func Convert(dst interface{}, src interface{}) (err error) 
+```
+转换函数, dst必须是指针
+
 # Examples
 
 conf.yml

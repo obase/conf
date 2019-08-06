@@ -697,6 +697,18 @@ func Scanf(keys string, f ScanFunc) (interface{}, bool) {
 	return nil, false
 }
 
+func Convert(dst interface{}, src interface{}) (err error) {
+	if src == nil {
+		return
+	}
+	bs, err := yaml.Marshal(src)
+	if err != nil {
+		return
+	}
+	err = yaml.Unmarshal(bs, dst)
+	return
+}
+
 /*
 1. 参数-conf <xxx>或-conf=<xxx>
 2. 当前路径./conf.yml
