@@ -8,464 +8,46 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"time"
 )
-
-/*
-注意: 不支持动态加载. 修改conf.yml配置必须重启服务! 另外conf是其他obase的最底层依赖, 其日志输出采用fmt
-*/
 
 const (
 	CONF_YAML_FILE string = "conf.yml"
 	PATH_STEP_SEP  byte   = '.'
 	CONF_YAML_ENV  string = "CONF_YAML"
+	TIME_LAYOUT           = "2006-01-02 15:04:05"
+	TIME_LENGTH           = len(TIME_LAYOUT)
 )
 
-var Values map[interface{}]interface{} = make(map[interface{}]interface{})
+//注意: 只支持读,不支持写. 保证性能的情况下才不会触发并发问题
+var values = make(map[interface{}]interface{})
 
-type ScanFunc func(val interface{}) interface{}
-
-func ToString(val interface{}) string {
-	switch val := val.(type) {
-	case nil:
-		return ""
-	case string:
-		return val
-	default:
-		return fmt.Sprintf("%v", val)
-	}
-}
-
-func ToBool(val interface{}) bool {
-	switch val := val.(type) {
-	case nil:
-		return false
-	case bool:
-		return val
-	case string:
-		return "true" == val
-	}
-	panic(fmt.Sprintf("invalid value to bool: %v", val))
-}
-
-func ToInt(val interface{}) int {
-	switch val := val.(type) {
-	case nil:
-		return 0
-	case int:
-		return val
-	case int64:
-		return int(val)
-	case string:
-		if v, e := strconv.Atoi(val); e == nil {
-			return v
-		}
-	}
-	panic(fmt.Sprintf("invalid value to int: %v", val))
-}
-
-func ToInt64(val interface{}) int64 {
-	switch val := val.(type) {
-	case nil:
-		return 0
-	case int:
-		return int64(val)
-	case int64:
-		return val
-	case string:
-		if v, e := strconv.ParseInt(val, 10, 64); e == nil {
-			return v
-		}
-	}
-	panic(fmt.Sprintf("invalid value to int: %v", val))
-}
-
-func ToFloat64(val interface{}) float64 {
-	switch val := val.(type) {
-	case nil:
-		return 0
-	case float64:
-		return val
-	case int:
-		return float64(val)
-	case int64:
-		return float64(val)
-	case string:
-		if v, e := strconv.ParseFloat(val, 64); e == nil {
-			return v
-		}
-	}
-	panic(fmt.Sprintf("invalid value to float64: %v", val))
-}
-
-const (
-	TIME_LAYOUT = "2006-01-02 15:04:05"
-	TIME_LENGTH = len(TIME_LAYOUT)
-)
-
-func ToTime(val interface{}) time.Time {
-	switch val := val.(type) {
-	case nil:
-		return time.Unix(0, 0)
-	case int:
-		return time.Unix(int64(val), 0)
-	case int64:
-		return time.Unix(val, 0)
-	case string:
-		if len(val) == 0 {
-			return ZERO_TIME
-		}
-		if vln := len(val); TIME_LENGTH == vln {
-			if ret, err := time.Parse(TIME_LAYOUT, val); err == nil {
-				return ret
-			}
-		} else {
-			if ret, err := time.Parse(TIME_LAYOUT[0:vln], val); err == nil {
-				return ret
-			}
-		}
-	}
-	panic(fmt.Sprintf("invalid value to time: %v", val))
-}
-
-func ToDuration(val interface{}) time.Duration {
-	switch val := val.(type) {
-	case nil:
-		return 0
-	case int:
-		return time.Duration(val)
-	case int64:
-		return time.Duration(val)
-	case string:
-		if len(val) == 0 {
-			return 0
-		}
-		if ret, err := time.ParseDuration(val); err == nil {
-			return ret
-		}
-	}
-	panic(fmt.Sprintf("invalid value to duration: %v", val))
-}
-
-func ToStringSlice(val interface{}) []string {
-	switch val := val.(type) {
-	case nil:
-		return nil
-	case []interface{}:
-		ret := make([]string, len(val))
-		for i, v := range val {
-			ret[i] = ToString(v)
-		}
-		return ret
-	case string:
-		return strings.Split(val, ",")
-	}
-	panic(fmt.Sprintf("invalid value to strSlice: %v", val))
-}
-
-func ToSlice(val interface{}) []interface{} {
-	switch val := val.(type) {
-	case nil:
-		return nil
-	case []interface{}:
-		return val
-	}
-	panic(fmt.Sprintf("invalid value to slice: %v", val))
-}
-
-func ToMap(val interface{}) map[string]interface{} {
-	switch val := val.(type) {
-	case nil:
-		return nil
-	case map[interface{}]interface{}:
-		ret := make(map[string]interface{}, len(val))
-		for k, v := range val {
-			ret[ToString(k)] = v
-		}
-		return ret
-	}
-	panic(fmt.Sprintf("invalid value to map: %v", val))
-}
-
-func ToStringMap(val interface{}) map[string]string {
-	switch val := val.(type) {
-	case nil:
-		return nil
-	case map[interface{}]interface{}:
-		ret := make(map[string]string, len(val))
-		for k, v := range val {
-			ret[ToString(k)] = ToString(v)
-		}
-		return ret
-	}
-	panic(fmt.Sprintf("invalid value to map: %v", val))
-}
-
-// it will panic if parse key failed
-func Elem(val interface{}, key string) (ret interface{}, ok bool) {
-	if val != nil {
-		switch val := val.(type) {
-		case map[interface{}]interface{}:
-			ret, ok = val[key]
-		case map[string]interface{}:
-			ret, ok = val[key]
-		case []interface{}:
-			if idx, err := strconv.Atoi(key); err == nil && idx >= 0 && idx < len(val) {
-				ret, ok = val[idx], true
-			}
-		}
-	}
-	return
-}
-
-func ElemString(val interface{}, key string) (ret string, ok bool) {
-	if val != nil {
-		switch val := val.(type) {
-		case map[interface{}]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToString(kv), true
-			}
-		case map[string]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToString(kv), true
-			}
-		case []interface{}:
-			if idx, err := strconv.Atoi(key); err == nil && idx >= 0 && idx < len(val) {
-				return ToString(val[idx]), true
-			}
-		}
-	}
-	return
-}
-
-func ElemBool(val interface{}, key string) (ret bool, ok bool) {
-	if val != nil {
-		switch val := val.(type) {
-		case map[interface{}]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToBool(kv), true
-			}
-		case map[string]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToBool(kv), true
-			}
-		case []interface{}:
-			if idx, err := strconv.Atoi(key); err == nil && idx >= 0 && idx < len(val) {
-				return ToBool(val[idx]), true
-			}
-		}
-	}
-	return
-}
-
-func ElemInt(val interface{}, key string) (ret int, ok bool) {
-	if val != nil {
-		switch val := val.(type) {
-		case map[interface{}]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToInt(kv), true
-			}
-		case map[string]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToInt(kv), true
-			}
-		case []interface{}:
-			if idx, err := strconv.Atoi(key); err == nil && idx >= 0 && idx < len(val) {
-				return ToInt(val[idx]), true
-			}
-		}
-	}
-	return
-}
-
-func ElemInt64(val interface{}, key string) (ret int64, ok bool) {
-	if val != nil {
-		switch val := val.(type) {
-		case map[interface{}]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToInt64(kv), true
-			}
-		case map[string]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToInt64(kv), true
-			}
-		case []interface{}:
-			if idx, err := strconv.Atoi(key); err == nil && idx >= 0 && idx < len(val) {
-				return ToInt64(val[idx]), true
-			}
-		}
-	}
-	return
-}
-
-func ElemFloat64(val interface{}, key string) (ret float64, ok bool) {
-	if val != nil {
-		switch val := val.(type) {
-		case map[interface{}]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToFloat64(kv), true
-			}
-		case map[string]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToFloat64(kv), true
-			}
-		case []interface{}:
-			if idx, err := strconv.Atoi(key); err == nil && idx >= 0 && idx < len(val) {
-				return ToFloat64(val[idx]), true
-			}
-		}
-	}
-	return
-}
-
-func ElemTime(val interface{}, key string) (ret time.Time, ok bool) {
-	if val != nil {
-		switch val := val.(type) {
-		case map[interface{}]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToTime(kv), true
-			}
-		case map[string]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToTime(kv), true
-			}
-		case []interface{}:
-			if idx, err := strconv.Atoi(key); err == nil && idx >= 0 && idx < len(val) {
-				return ToTime(val[idx]), true
-			}
-		}
-	}
-	return
-}
-
-func ElemDuration(val interface{}, key string) (ret time.Duration, ok bool) {
-	if val != nil {
-		switch val := val.(type) {
-		case map[interface{}]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToDuration(kv), true
-			}
-		case map[string]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToDuration(kv), true
-			}
-		case []interface{}:
-			if idx, err := strconv.Atoi(key); err == nil && idx >= 0 && idx < len(val) {
-				return ToDuration(val[idx]), true
-			}
-		}
-	}
-	return
-}
-
-func ElemSlice(val interface{}, key string) (ret []interface{}, ok bool) {
-	if val != nil {
-		switch val := val.(type) {
-		case map[interface{}]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToSlice(kv), true
-			}
-		case map[string]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToSlice(kv), true
-			}
-		case []interface{}:
-			if idx, err := strconv.Atoi(key); err == nil && idx >= 0 && idx < len(val) {
-				return ToSlice(val[idx]), true
-			}
-		}
-	}
-	return
-}
-
-func ElemStringSlice(val interface{}, key string) (ret []string, ok bool) {
-	if val != nil {
-		switch val := val.(type) {
-		case map[interface{}]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToStringSlice(kv), true
-			}
-		case map[string]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToStringSlice(kv), true
-			}
-		case []interface{}:
-			if idx, err := strconv.Atoi(key); err == nil && idx >= 0 && idx < len(val) {
-				return ToStringSlice(val[idx]), true
-			}
-		}
-	}
-	return
-}
-
-func ElemMap(val interface{}, key string) (ret map[string]interface{}, ok bool) {
-	if val != nil {
-		switch val := val.(type) {
-		case map[interface{}]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToMap(kv), true
-			}
-		case map[string]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToMap(kv), true
-			}
-		case []interface{}:
-			if idx, err := strconv.Atoi(key); err == nil && idx >= 0 && idx < len(val) {
-				return ToMap(val[idx]), true
-			}
-		}
-	}
-	return
-}
-
-func ElemStringMap(val interface{}, key string) (ret map[string]string, ok bool) {
-	if val != nil {
-		switch val := val.(type) {
-		case map[interface{}]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToStringMap(kv), true
-			}
-		case map[string]interface{}:
-			if kv, ok := val[key]; ok {
-				return ToStringMap(kv), true
-			}
-		case []interface{}:
-			if idx, err := strconv.Atoi(key); err == nil && idx >= 0 && idx < len(val) {
-				return ToStringMap(val[idx]), true
-			}
-		}
-	}
-	return
-}
+type BindFunc func(val interface{}) interface{}
 
 func Get(keys string) (val interface{}, ok bool) {
 
+	val = values
 	if keys == "" {
-		return Values, true
-	}
-
-	val = Values
-	for mk, ln := 0, len(keys); mk < ln; {
-		ps := mk
-		for ps < ln {
-			if keys[ps] == PATH_STEP_SEP {
-				break
-			} else {
-				ps++
-			}
-		}
-		if mk < ps {
-			if val, ok = Elem(val, keys[mk:ps]); !ok {
-				// 非空需要重置,避免返回误解
-				if val != nil {
-					val = nil
+		ok = true
+	} else {
+		for mk, ln := 0, len(keys); mk < ln; {
+			ps := mk
+			for ps < ln {
+				if keys[ps] == PATH_STEP_SEP {
+					break
+				} else {
+					ps++
 				}
-				return
 			}
+			if mk < ps {
+				if val, ok = Elem(val, keys[mk:ps]); !ok {
+					// 非空需要重置,避免返回误解
+					val = nil
+					return
+				}
+			}
+			mk = ps + 1
 		}
-		mk = ps + 1
 	}
 	return
 }
@@ -477,11 +59,39 @@ func GetMap(keys string) (map[string]interface{}, bool) {
 	return nil, false
 }
 
+func OptiMap(keys string, def map[string]interface{}) map[string]interface{} {
+	if vl, ok := GetMap(keys); ok {
+		return vl
+	}
+	return def
+}
+
+func MustMap(keys string) map[string]interface{} {
+	if vl, ok := GetMap(keys); ok {
+		return vl
+	}
+	panic("missing map config: " + keys)
+}
+
 func GetStringMap(keys string) (map[string]string, bool) {
 	if vl, ok := Get(keys); ok {
 		return ToStringMap(vl), true
 	}
 	return nil, false
+}
+
+func OptiStringMap(keys string, def map[string]string) map[string]string {
+	if vl, ok := GetStringMap(keys); ok {
+		return vl
+	}
+	return def
+}
+
+func MustStringMap(keys string) map[string]string {
+	if vl, ok := GetStringMap(keys); ok {
+		return vl
+	}
+	panic("missing string map config: " + keys)
 }
 
 func GetBool(keys string) (bool, bool) {
@@ -675,11 +285,22 @@ func MustStringSlice(keys string) []string {
 	panic("missing string slice config: " + keys)
 }
 
-func Scan(keys string, ret interface{}) bool {
+func Bind(keys string, ret interface{}) bool {
 	if vl, ok := Get(keys); ok {
 		if bs, err := yaml.Marshal(vl); err == nil {
 			if err = yaml.Unmarshal(bs, ret); err == nil {
 				return true
+			}
+		}
+	}
+	return false
+}
+
+func MustBind(keys string, ret interface{}) {
+	if vl, ok := Get(keys); ok {
+		if bs, err := yaml.Marshal(vl); err == nil {
+			if err = yaml.Unmarshal(bs, ret); err == nil {
+				return
 			} else {
 				panic(err)
 			}
@@ -687,26 +308,13 @@ func Scan(keys string, ret interface{}) bool {
 			panic(err)
 		}
 	}
-	return false
 }
 
-func Scanf(keys string, f ScanFunc) (interface{}, bool) {
+func BindWith(keys string, f BindFunc) (interface{}, bool) {
 	if vl, ok := Get(keys); ok {
 		return f(vl), true
 	}
 	return nil, false
-}
-
-func Convert(src interface{}, dst interface{}) (err error) {
-	if src == nil {
-		return
-	}
-	bs, err := yaml.Marshal(src)
-	if err != nil {
-		return
-	}
-	err = yaml.Unmarshal(bs, dst)
-	return
 }
 
 /*
@@ -732,7 +340,7 @@ func init() {
 
 	file, err := os.Open(path)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Load conf failed: "+path)
+		fmt.Fprintln(os.Stderr, "\nLoad conf failed: "+path)
 		panic(err)
 	}
 	defer file.Close()
@@ -741,9 +349,9 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	err = yaml.Unmarshal(bs, &Values)
+	err = yaml.Unmarshal(bs, &values)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Fprintln(os.Stdout, "Load conf success: "+path)
+	fmt.Fprintln(os.Stdout, "\nLoad conf success: "+path)
 }

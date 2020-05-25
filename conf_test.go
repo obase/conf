@@ -20,7 +20,7 @@ func TestGetFloat64(t *testing.T) {
 }
 
 func TestGetDuration(t *testing.T) {
-	fmt.Println(GetDuration("pvp.redisNotityDelay"))
+	fmt.Println(GetDuration("pvp.redisNotityDelay2"))
 }
 
 func TestGetTime(t *testing.T) {
@@ -38,7 +38,7 @@ func TestScan2(t *testing.T) {
 	fmt.Println(vl)
 
 	var ss []*Schedule
-	Scan("pvp.schedules", &ss)
+	Bind("pvp.schedules", &ss)
 	for _, s := range ss {
 		fmt.Printf("category=%v,matchCode=%v,season=%v\n", s.Category, s.MatchCode, s.Season)
 	}
