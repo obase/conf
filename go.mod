@@ -1,4 +1,4 @@
-module github.com/obase/conf
+module github.com/obase/conf/v2
 
 go 1.14
 
