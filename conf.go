@@ -12,11 +12,9 @@ import (
 )
 
 const (
-	CONF_YAML_FILE string = "conf.yml"
-	PATH_STEP_SEP  byte   = '.'
-	CONF_YAML_ENV  string = "CONF_YAML"
-	TIME_LAYOUT           = "2006-01-02 15:04:05"
-	TIME_LENGTH           = len(TIME_LAYOUT)
+	CONF_YAML_FILE  string = "conf.yml"
+	PATH_STEP_SEP   byte   = '.'
+	CONF_YAML_ENV   string = "CONF_YAML"
 )
 
 //注意: 只支持读,不支持写. 保证性能的情况下才不会触发并发问题

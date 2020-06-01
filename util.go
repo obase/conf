@@ -165,6 +165,11 @@ func ToFloat64(val interface{}) float64 {
 	panic(fmt.Sprintf("invalid value to float64: %v", val))
 }
 
+const (
+	DATETIME_LAYOUT string = "2006-01-02 15:04:05"
+	DATETIME_LENGTH int    = len(DATETIME_LAYOUT)
+)
+
 func ToTime(val interface{}) time.Time {
 	switch val := val.(type) {
 	case nil:
@@ -190,15 +195,17 @@ func ToTime(val interface{}) time.Time {
 	case uint64:
 		return time.Unix(int64(val), 0)
 	case string:
-		if len(val) == 0 {
-			return ZERO_TIME
-		}
-		if vln := len(val); TIME_LENGTH == vln {
-			if ret, err := time.Parse(TIME_LAYOUT, val); err == nil {
+		vln := len(val)
+		if vln == DATETIME_LENGTH {
+			if ret, err := time.ParseInLocation(DATETIME_LAYOUT, val, time.Local); err == nil {
 				return ret
 			}
-		} else {
-			if ret, err := time.Parse(TIME_LAYOUT[0:vln], val); err == nil {
+		} else if vln < DATETIME_LENGTH {
+			if ret, err := time.ParseInLocation(DATETIME_LAYOUT[:vln], val, time.Local); err == nil {
+				return ret
+			}
+		} else if vln > DATETIME_LENGTH {
+			if ret, err := time.ParseInLocation(DATETIME_LAYOUT, val[:DATETIME_LENGTH], time.Local); err == nil {
 				return ret
 			}
 		}
@@ -211,14 +218,29 @@ func ToDuration(val interface{}) time.Duration {
 	case nil:
 		return 0
 	case int:
-		return time.Duration(val)
+		return time.Duration(int64(val))
+	case int8:
+		return time.Duration(int64(val))
+	case int16:
+		return time.Duration(int64(val))
+	case int32:
+		return time.Duration(int64(val))
 	case int64:
 		return time.Duration(val)
+	case uint:
+		return time.Duration(int64(val))
+	case uint8:
+		return time.Duration(int64(val))
+	case uint16:
+		return time.Duration(int64(val))
+	case uint32:
+		return time.Duration(int64(val))
+	case uint64:
+		return time.Duration(int64(val))
 	case string:
 		if len(val) == 0 {
 			return 0
-		}
-		if ret, err := time.ParseDuration(val); err == nil {
+		} else if ret, err := time.ParseDuration(val); err == nil {
 			return ret
 		}
 	}
@@ -229,6 +251,8 @@ func ToStringSlice(val interface{}) []string {
 	switch val := val.(type) {
 	case nil:
 		return nil
+	case []string:
+		return val
 	case []interface{}:
 		ret := make([]string, len(val))
 		for i, v := range val {
@@ -255,6 +279,8 @@ func ToMap(val interface{}) map[string]interface{} {
 	switch val := val.(type) {
 	case nil:
 		return nil
+	case map[string]interface{}:
+		return val
 	case map[interface{}]interface{}:
 		ret := make(map[string]interface{}, len(val))
 		for k, v := range val {
@@ -269,6 +295,14 @@ func ToStringMap(val interface{}) map[string]string {
 	switch val := val.(type) {
 	case nil:
 		return nil
+	case map[string]string:
+		return val
+	case map[string]interface{}:
+		ret := make(map[string]string, len(val))
+		for k, v := range val {
+			ret[k] = ToString(v)
+		}
+		return ret
 	case map[interface{}]interface{}:
 		ret := make(map[string]string, len(val))
 		for k, v := range val {
