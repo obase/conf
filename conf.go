@@ -8,26 +8,49 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 	"time"
 )
 
 const (
-	CONF_YAML_FILE  string = "conf.yml"
-	PATH_STEP_SEP   byte   = '.'
-	CONF_YAML_ENV   string = "CONF_YAML"
+	CONF_YAML_FILE string = "conf.yml"
+	PATH_STEP_SEP  byte   = '.'
+	CONF_YAML_ENV  string = "CONF_YAML"
 )
-
-//注意: 只支持读,不支持写. 保证性能的情况下才不会触发并发问题
-var values = make(map[interface{}]interface{})
 
 type BindFunc func(val interface{}) interface{}
 
-func Get(keys string) (val interface{}, ok bool) {
+//注意: 只支持读,不支持写. 保证性能的情况下才不会触发并发问题
+var (
+	rwmutx sync.RWMutex
+	values = make(map[string]interface{})
+)
 
-	val = values
+func Setup(vs map[string]interface{}) {
+	rwmutx.Lock()
+	for k, v := range vs {
+		if v == nil {
+			delete(values, k)
+		} else {
+			values[k] = v
+		}
+	}
+	rwmutx.Unlock()
+}
+
+func Get(keys string) (interface{}, bool) {
+
 	if keys == "" {
-		ok = true
+		var val = make(map[string]interface{}, len(values))
+		rwmutx.RLock()
+		for k, v := range values {
+			val[k] = v
+		}
+		rwmutx.RUnlock()
+		return val, true
 	} else {
+		var val interface{} = values
+		var ok bool
 		for mk, ln := 0, len(keys); mk < ln; {
 			ps := mk
 			for ps < ln {
@@ -38,16 +61,18 @@ func Get(keys string) (val interface{}, ok bool) {
 				}
 			}
 			if mk < ps {
-				if val, ok = Elem(val, keys[mk:ps]); !ok {
+				rwmutx.RLock()
+				val, ok = Elem(val, keys[mk:ps])
+				rwmutx.RUnlock()
+				if !ok {
 					// 非空需要重置,避免返回误解
-					val = nil
-					return
+					return nil, false
 				}
 			}
 			mk = ps + 1
 		}
+		return val, ok
 	}
-	return
 }
 
 func GetMap(keys string) (map[string]interface{}, bool) {
@@ -343,13 +368,15 @@ func init() {
 	}
 	defer file.Close()
 
+	var vs map[string]interface{}
 	bs, err := ioutil.ReadAll(bufio.NewReader(file))
 	if err != nil {
 		panic(err)
 	}
-	err = yaml.Unmarshal(bs, &values)
+	err = yaml.Unmarshal(bs, &vs)
 	if err != nil {
 		panic(err)
 	}
+	Setup(vs)
 	fmt.Fprintln(os.Stdout, "\nLoad conf success: "+path)
 }
