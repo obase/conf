@@ -14,6 +14,8 @@ func ToString(val interface{}) string {
 		return ""
 	case string:
 		return val
+	case *string:
+		return *val
 	case bool:
 		return strconv.FormatBool(val)
 	case int:
