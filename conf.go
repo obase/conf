@@ -373,7 +373,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	err = yaml.Unmarshal(bs, &vs)
+	err = yaml.Unmarshal([]byte(Escape(string(bs))), &vs)
 	if err != nil {
 		panic(err)
 	}

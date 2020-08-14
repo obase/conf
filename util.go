@@ -174,6 +174,10 @@ func ToTime(val interface{}) time.Time {
 	switch val := val.(type) {
 	case nil:
 		return time.Unix(0, 0)
+	case time.Time:
+		return val
+	case *time.Time:
+		return *val
 	case int:
 		return time.Unix(int64(val), 0)
 	case int8:
@@ -217,6 +221,10 @@ func ToDuration(val interface{}) time.Duration {
 	switch val := val.(type) {
 	case nil:
 		return 0
+	case time.Duration:
+		return val
+	case *time.Duration:
+		return *val
 	case int:
 		return time.Duration(int64(val))
 	case int8:
