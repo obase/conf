@@ -7,66 +7,70 @@ import (
 )
 
 /*
-替换环境变量等等内容
+替换环境变量等等内容. 具体格式为: ${NAME:default}, 如果没有指定":"则保留${NAME}的字样
 */
 func Escape(val string) string {
-	start := strings.IndexByte(val, '$')
+
+	var (
+		start int
+		end   int
+	)
+
+	start = strings.Index(val, "${")
 	if start == -1 {
 		return val
 	}
 
+	end = strings.IndexByte(val, '}')
+	if end == -1 {
+		return val
+	}
+
 	buf := new(bytes.Buffer)
-	mark := 0
-	end := 0
-	plen := len(val)
 	for {
+		buf.WriteString(val[:start])
+		end++
+		buf.WriteString(getenv(val[start:end]))
+		val = val[end:]
+		start = strings.Index(val, "${")
 		if start == -1 {
-			buf.WriteString(val[mark:])
+			buf.WriteString(val)
 			break
-		} else {
-			buf.WriteString(val[mark:start])
 		}
-		mark = start + 1
-		if val[mark] == '{' {
-			mark++
-			end = nextByte(&val, '}', mark, plen)
-			if end == -1 {
-				buf.WriteString(val[start:])
-				break
-			} else {
-				buf.WriteString(os.Getenv(val[mark:end]))
-			}
-			mark = end + 1
-		} else {
-			end = nextNotIdenByte(&val, mark, plen)
-			if end == -1 {
-				buf.WriteString(val[start:])
-				break
-			} else {
-				buf.WriteString(os.Getenv(val[mark:end]))
-			}
-			mark = end
+		end = strings.IndexByte(val, '}')
+		if end == -1 {
+			buf.WriteString(val)
+			break
 		}
-		start = nextByte(&val, '$', mark, plen)
 	}
 
 	return buf.String()
 }
 
-func nextByte(v *string, c byte, start int, end int) int {
-	for i := start; i < end; i++ {
-		if (*v)[i] == c {
-			return i
-		}
-	}
-	return -1
-}
+/*
+格式: ${NAME:default}
+- ${NAME}: 如果os.Getenv(NAME)不为空则返回结果, 为空则返回${NAME}. 即不做替换
+- ${NAME:default}: 如果os.Getenv(NAME)不为空则返回结果, 为空则返回default
+*/
+func getenv(segment string) string {
 
-func nextNotIdenByte(v *string, start int, end int) int {
-	for i := start; i < end; i++ {
-		if ch := (*v)[i]; !((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_') {
-			return i
+	var (
+		poc int
+		val string
+	)
+
+	poc = strings.IndexByte(segment, ':') // 取首而非尾
+	if poc == -1 {
+		val = os.Getenv(segment[2 : len(segment)-1])
+		if val != "" {
+			return val
 		}
+		return segment
+	} else {
+		val = os.Getenv(segment[2:poc])
+		if val != "" {
+			return val
+		}
+		return segment[poc+1 : len(segment)-1]
 	}
-	return -1
 }

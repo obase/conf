@@ -12,9 +12,6 @@ import (
 )
 
 func TestGet(t *testing.T) {
-
-	os.Setenv("TEST", "abced")
-
 	fmt.Println(Get(""))
 	fmt.Println(Get("pvp"))
 }
