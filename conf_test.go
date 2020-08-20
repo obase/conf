@@ -13,7 +13,7 @@ import (
 
 func TestGet(t *testing.T) {
 	fmt.Println(Get(""))
-	fmt.Println(Get("pvp"))
+	fmt.Println(Get("mongodb"))
 }
 
 func TestEscape(t *testing.T) {
