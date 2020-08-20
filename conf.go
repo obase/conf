@@ -345,7 +345,7 @@ func BindWith(keys string, f BindFunc) (interface{}, bool) {
 2. 当前路径./conf.yml
 3. 工作路径 $CWD/conf.yml
 */
-func init2() {
+func init() {
 	var path string
 
 	path = os.Getenv(CONF_YAML_ENV)
