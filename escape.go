@@ -21,15 +21,15 @@ func Escape(val string) string {
 		return val
 	}
 
-	end = strings.IndexByte(val, '}')
+	end = strings.IndexByte(val[start:], '}')
 	if end == -1 {
 		return val
 	}
 
 	buf := new(bytes.Buffer)
 	for {
+		end += start + 1
 		buf.WriteString(val[:start])
-		end++
 		buf.WriteString(getenv(val[start:end]))
 		val = val[end:]
 		start = strings.Index(val, "${")
@@ -37,7 +37,7 @@ func Escape(val string) string {
 			buf.WriteString(val)
 			break
 		}
-		end = strings.IndexByte(val, '}')
+		end = strings.IndexByte(val[start:], '}')
 		if end == -1 {
 			buf.WriteString(val)
 			break
