@@ -29,6 +29,10 @@ func Escape(val string) string {
 	buf := new(bytes.Buffer)
 	for {
 		end += start + 1
+		// FIXBUG: ${${TEXT}形式问题
+		if tmp := strings.LastIndex(val[start:end], "${"); tmp != 0 {
+			start += tmp
+		}
 		buf.WriteString(val[:start])
 		buf.WriteString(getenv(val[start:end]))
 		val = val[end:]
